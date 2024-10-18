@@ -1,5 +1,6 @@
 // appollo-serverモジュールを読み込む
-const { ApolloServer } = require('apollo-server')
+const { ApolloServer } = require('apollo-server-express')
+const express = require('express')
 
 // カスタムスカラー用のリゾルバ作成のためにGraphQLScalarTypeを読み込む
 const { GraphQLScalarType } = require('graphql')
@@ -142,13 +143,27 @@ const resolvers = {
   })
 }
 
+// create an express application
+var app = express()
+
 // create an instance of ApolloServer
 const server = new ApolloServer({
   typeDefs,
   resolvers
 })
 
-// start the web server
-server
-  .listen()
-  .then(({ url }) => { console.log(`GraphQL Service running on ${url}`) })
+// start the ApolloServer instance and then apply the middleware
+async function startServer() {
+  await server.start();
+  server.applyMiddleware({ app });
+
+  // define a simple route
+  app.get('/', (req, res) => res.end('Welcome to the PhotoShare API'));
+
+  // start the web server
+  app.listen({ port: 4000 }, () =>
+    console.log(`GraphQL Server running @ http://localhost:4000${server.graphqlPath}`)
+  );
+}
+
+startServer();
