@@ -1,3 +1,4 @@
+const expressPlayground = require('graphql-playground-middleware-express').default
 // appollo-serverモジュールを読み込む
 const { ApolloServer } = require('apollo-server-express')
 const express = require('express')
@@ -159,6 +160,7 @@ async function startServer() {
 
   // define a simple route
   app.get('/', (req, res) => res.end('Welcome to the PhotoShare API'));
+  app.get('/playground', expressPlayground({ endpoint: '/graphql' }))
 
   // start the web server
   app.listen({ port: 4000 }, () =>
