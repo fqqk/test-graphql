@@ -1,12 +1,31 @@
-module.exports = {
-  totalPhotos: () => photos.length,
+const { ObjectID } = require('mongodb')
 
-  allPhotos: (args) => {
-    console.log(args.after)
-    if (args.after) {
-      return photos.filter(p => p.createdAt > args.after)
-    } else {
-      return photos
-    }
-  }
+module.exports = {    
+  me: (parent, args, { currentUser }) => currentUser,
+  
+  totalPhotos: (parent, args, { db }) => 
+    db.collection('photos')
+      .estimatedDocumentCount(),
+
+  allPhotos: (parent, args, { db }) =>
+    db.collection('photos')
+      .find()
+      .toArray(),
+  
+  Photo: (parent, args, { db }) => 
+    db.collection('photos')
+      .findOne({ _id: ObjectID(args.id) }),    
+
+  totalUsers: (parent, args, { db }) =>
+    db.collection('users')
+      .estimatedDocumentCount(),
+
+  allUsers: (parent, args, { db }) =>
+    db.collection('users')
+      .find()
+      .toArray(),
+
+  User: (parent, args, { db }) => 
+    db.collection('users')
+      .findOne({ githubLogin: args.login })
 }
