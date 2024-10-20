@@ -77,17 +77,18 @@ const Mutation = {
 
   addFakeUsers: async (parent, { count }, { db }) => {
     var randomUserApi = `https://randomuser.me/api/?results=${count}`
+    var res = await fetch(randomUserApi).then(res => res.json())
+    const usersData = await res.results
 
-    var results = await fetch(randomUserApi).then(res => res.json())
-
-    var users = results.map(r => ({
+    var users = usersData.map(r => ({
       githubLogin: r.login.username,
       name: `${r.name.first} ${r.name.last}`,
       avatar: r.picture.thumbnail,
       githubToken: r.login.sha1
     }))
 
-    await db.collection('users').insertOne(users)
+    // https://www.mongodb.com/ja-jp/docs/manual/reference/method/db.collection.insertMany/
+    await db.collection('users').insertMany(users)
 
     return users
   },
