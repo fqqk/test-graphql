@@ -17,7 +17,9 @@ const Mutation = {
       created: new Date()
     }
 
-    const { insertedIds } = await db.collection('photos').insert(newPhoto)
+    console.log('newPhoto', newPhoto)
+    const insertedIds = await db.collection('photos').insertOne(newPhoto)
+    console.log('insertedIds', insertedIds)
     newPhoto.id = insertedIds[0]
 
     return newPhoto
@@ -76,7 +78,7 @@ const Mutation = {
   addFakeUsers: async (parent, { count }, { db }) => {
     var randomUserApi = `https://randomuser.me/api/?results=${count}`
 
-    var { results } = await fetch(randomUserApi).then(res => res.json())
+    var results = await fetch(randomUserApi).then(res => res.json())
 
     var users = results.map(r => ({
       githubLogin: r.login.username,
@@ -85,7 +87,7 @@ const Mutation = {
       githubToken: r.login.sha1
     }))
 
-    await db.collection('users').insert(users)
+    await db.collection('users').insertOne(users)
 
     return users
   },
