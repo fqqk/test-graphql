@@ -1,14 +1,13 @@
-const fetch = require('node-fetch')
-const fs = require('fs')
+import fetch from 'node-fetch';
+import fs from 'fs';
 
-const findBy = (value, array, field='id') =>
+export const findBy = (value, array, field='id') =>
 	array[array.map(item=>item[field]).indexOf(value)]
 
-const generateFakeUsers = count => 
+export const generateFakeUsers = count => 
     fetch(`https://randomuser.me/api/?results=${count}`)
         .then(res => res.json())
 
-// credentials is an object with code, client_id, and client_secret
 const requestGithubToken = credentials => 
     fetch(
         'https://github.com/login/oauth/access_token',
@@ -26,7 +25,7 @@ const requestGithubUserAccount = token =>
     fetch(`https://api.github.com/user?access_token=${token}`)
         .then(res => res.json())
         
-const authorizeWithGithub = async credentials => {
+export const authorizeWithGithub = async credentials => {
     const { access_token } = await requestGithubToken(credentials)
     const githubUser = await requestGithubUserAccount(access_token)
     return { ...githubUser, access_token }
@@ -43,9 +42,7 @@ const saveFile = (stream, path) =>
         .pipe(fs.createWriteStream(path))
     })
 
-const uploadFile = async (file, path) => {
+export const uploadFile = async (file, path) => {
     const { stream } = await file
     return saveFile(stream, path)
 }
-
-module.exports = {findBy, authorizeWithGithub, generateFakeUsers, uploadFile}

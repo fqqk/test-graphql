@@ -1,10 +1,11 @@
-const { authorizeWithGithub } = require('../lib')
-const fetch = require('node-fetch')
-const { ObjectID } = require('mongodb')
+import { authorizeWithGithub } from '../lib.js';
+import fetch from 'node-fetch';
+import pkg from 'mongodb';
+const { ObjectID } = pkg;
 
-module.exports = {
+const Mutation = {
 
-  async postPhoto(parent, args, { db, currentUser }) {
+  async postPhoto(args, { db, currentUser }) {
 
     if (!currentUser) {
       throw new Error('only an authorized user can post a photo')
@@ -23,7 +24,7 @@ module.exports = {
 
   },
 
-  async tagPhoto(parent, args, { db }) {
+  async tagPhoto(args, { db }) {
 
     await db.collection('tags')
       .replaceOne(args, args, { upsert: true })
@@ -33,7 +34,7 @@ module.exports = {
 
   },
 
-  async githubAuth(parent, { code }, { db }) {
+  async githubAuth({ code }, { db }) {
 
     let {
       message,
@@ -66,7 +67,7 @@ module.exports = {
   
   },
 
-  addFakeUsers: async (parent, { count }, { db }) => {
+  addFakeUsers: async ({ count }, { db }) => {
     var randomUserApi = `https://randomuser.me/api/?results=${count}`
 
     var { results } = await fetch(randomUserApi).then(res => res.json())
@@ -83,7 +84,7 @@ module.exports = {
     return users
   },
 
-  async fakeUserAuth(parent, { githubLogin }, { db }) {
+  async fakeUserAuth({ githubLogin }, { db }) {
     var user = await db.collection('users').findOne({ githubLogin })
 
     if (!user) {
@@ -97,3 +98,5 @@ module.exports = {
   }
 
 }
+
+export default Mutation

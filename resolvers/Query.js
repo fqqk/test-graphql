@@ -1,6 +1,7 @@
-const { ObjectID } = require('mongodb')
+import pkg from 'mongodb';
+const { ObjectID } = pkg;
 
-module.exports = {    
+const Query = {    
   me: (parent, args, { currentUser }) => currentUser,
   
   totalPhotos: (parent, args, { db }) => 
@@ -29,3 +30,5 @@ module.exports = {
     db.collection('users')
       .findOne({ githubLogin: args.login })
 }
+
+export default Query;

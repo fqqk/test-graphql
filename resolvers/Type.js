@@ -1,7 +1,7 @@
-const { GraphQLScalarType } = require('graphql')
-const { ObjectID } = require('mongodb')
-
-module.exports = {
+import { GraphQLScalarType } from 'graphql';
+import pkg from 'mongodb';
+const { ObjectID } = pkg;
+const Type = {
     
     Photo: {
         
@@ -61,3 +61,5 @@ module.exports = {
     })
 
 }
+
+export default Type;

@@ -1,43 +1,59 @@
-// appollo-serverモジュールを読み込む
-const { ApolloServer } = require('apollo-server-express')
-const { MongoClient } = require('mongodb')
-require('dotenv').config()
-const express = require('express')
-const expressPlayground = require('graphql-playground-middleware-express').default
-const { readFileSync } = require('fs')
+import express from 'express';
+import { ApolloServer } from 'apollo-server-express';
+import { MongoClient } from 'mongodb';
+import { readFileSync } from 'fs';
+// https://github.com/graphql/graphql-playground/issues/1327
+import expressPlayground from 'graphql-playground-middleware-express'
+const graphQLPlayground = expressPlayground.default
+import resolvers from './resolvers/index.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const typeDefs = readFileSync('./typeDefs.graphql', 'UTF-8')
-const resolvers = require('./resolvers')
+var typeDefs = readFileSync('./typeDefs.graphql', 'UTF-8')
 
-// start the ApolloServer instance and then apply the middleware
 async function start() {
+  const app = express()
   const MONGO_DB = process.env.DB_HOST
-  const client = await MongoClient.connect(MONGO_DB, { useNewUrlParser: true })
-  const db = client.db()
-  const context = { db }
-  
+  let db
+
+  try {
+    const client = await MongoClient.connect(MONGO_DB, { useNewUrlParser: true })
+    db = client.db()
+  } catch (error) {
+    console.log(`
+    
+      Mongo DB Host not found!
+      please add DB_HOST environment variable to .env file
+
+      exiting...
+       
+    `)
+    process.exit(1)
+  }
+
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: async ({ req}) => {
+    context: async ({ req }) => {
       const githubToken = req.headers.authorization
       const currentUser = await db.collection('users').findOne({ githubToken })
       return { db, currentUser }
     }
   })
-  await server.start();
-  // create an express application
-  const app = express()
-  server.applyMiddleware({ app });
 
-  // define a simple route
-  app.get('/', (req, res) => res.end('Welcome to the PhotoShare API'));
-  app.get('/playground', expressPlayground({ endpoint: '/graphql' }))
+  await server.start()
+  server.applyMiddleware({ app })
 
-  // start the web server
+  app.get('/playground', graphQLPlayground({ endpoint: '/graphql' }))
+
+  app.get('/', (req, res) => {
+    let url = `https://github.com/login/oauth/authorize?client_id=${process.env.CLIENT_ID}&scope=user`
+    res.end(`<a href="${url}">Sign In with Github</a>`)
+  })
+
   app.listen({ port: 4000 }, () =>
-    console.log(`GraphQL Server running @ http://localhost:4000${server.graphqlPath}`)
-  );
+    console.log(`GraphQL Server running at http://localhost:4000${server.graphqlPath}`)
+  )
 }
 
-start();
+start()
