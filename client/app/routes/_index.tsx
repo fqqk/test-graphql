@@ -1,4 +1,7 @@
 import type { MetaFunction } from "@remix-run/node";
+import { request as gqlRequest } from "graphql-request";
+import { useLoaderData, useActionData, Form } from '@remix-run/react';
+import { ActionFunction, redirect, json } from '@remix-run/node';
 
 export const meta: MetaFunction = () => {
   return [
@@ -7,7 +10,33 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+type User = {
+  avatar: string;
+  name: string;
+  githubLogin: string;
+};
+
+type LoaderData = {
+  allUsers: User[];
+};
+
+type ActionData = {
+  error?: string;
+};
+
+type actionRequest = {
+  formData: () => Promise<FormData>;
+};
+
+type addFakerResponse = {
+  addFakeUsers: {
+    githubLogin: string;
+  }[];
+}
+
 export default function Index() {
+  const data = useLoaderData<LoaderData>(); // loaderから取得
+  const actionData = useActionData<ActionData>();
   return (
     <div className="flex h-screen items-center justify-center">
       <div className="flex flex-col items-center gap-16">
@@ -28,6 +57,42 @@ export default function Index() {
             />
           </div>
         </header>
+        <div>
+          {data.allUsers.map((user) => (
+            <div key={user.githubLogin} className="flex items-center gap-4 mb-4">
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="w-12 h-12 rounded-full"
+              />
+              <span className="text-lg text-gray-800 dark:text-gray-100">
+                {user.name}
+              </span>
+            </div>
+          ))}
+        </div>
+        <Form method="post">
+          <div>
+            <label>
+              Number of users to add:
+              <input
+                type="number"
+                name="count"
+                min="1"
+                defaultValue="1"
+                required
+                className="p-2 mt-1 border border-gray-300 rounded"
+               />
+            </label>
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 mt-4 text-white bg-blue-500 rounded hover:bg-blue-700"
+          >
+            Add Users
+          </button>
+          {actionData?.error && <p style={{ color: 'red' }}>{actionData.error}</p>}
+        </Form>
         <nav className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-gray-200 p-6 dark:border-gray-700">
           <p className="leading-6 text-gray-700 dark:text-gray-200">
             What&apos;s next?
@@ -52,6 +117,56 @@ export default function Index() {
     </div>
   );
 }
+
+const graphqlEndpoint = 'http://localhost:4000/graphql';
+
+const graphqlQuery = `
+  query listUsers {
+    allUsers {
+      avatar
+      name
+    }
+  }
+`
+
+const graphqlMutation = `
+  mutation populate($count: Int!) {
+    addFakeUsers(count: $count) {
+      githubLogin
+    }
+  }
+`
+
+// loader関数
+export const loader = async (): Promise<LoaderData> => {
+  try {
+    const data = await gqlRequest<LoaderData>(graphqlEndpoint, graphqlQuery);
+    return data;
+  } catch (error) {
+    console.error(error);
+    return {
+      allUsers: []
+    };
+  }
+};
+
+export const action: ActionFunction = async ({ request }: { request: actionRequest }) => {
+  console.log('Adding users...', request);
+  const formData = await request.formData();
+  const count = parseInt(formData.get('count') as string, 10);
+
+  try {
+    // `graphql-request`を使ってミューテーションを呼び出す
+    const data: addFakerResponse = await gqlRequest(graphqlEndpoint, graphqlMutation, { count });
+    console.log('Added users:', data);
+
+    // 成功時にはリダイレクト
+    return redirect('/');
+  } catch (error) {
+    console.error('Error in mutation:', error);
+    return json({ error: 'Failed to add users' }, { status: 500 });
+  }
+};
 
 const resources = [
   {
